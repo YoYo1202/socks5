@@ -6,12 +6,22 @@
 #   bash s5.sh 10800            # 指定端口
 #   bash s5.sh 10800 myuser     # 指定端口 + 账号
 #   bash s5.sh 1080 none        # 免认证（仅内网/临时）
+#   bash s5.sh random           # 端口在 20000-59999 里随机挑一个空闲的
 #
 # 只代理 TCP；要 UDP 换 sing-box / xray。
 # ============================================================
 set -euo pipefail
 
-PORT=$(printf '%s' "${1:-1080}" | tr -cd '0-9'); [ -n "$PORT" ] || PORT=1080
+if [[ "${1:-}" == "random" ]]; then
+  PORT=""
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    C=$(( (RANDOM << 15 ^ RANDOM) % 40000 + 20000 ))
+    if ! ss -lnt 2>/dev/null | awk '{print $4}' | grep -q ":$C$"; then PORT=$C; break; fi
+  done
+  [ -n "$PORT" ] || PORT=10800
+else
+  PORT=$(printf '%s' "${1:-1080}" | tr -cd '0-9'); [ -n "$PORT" ] || PORT=1080
+fi
 U=$(printf '%s' "${2:-s5user}" | tr -d '\r\n ')
 [ -n "$U" ] || U=s5user
 [[ $EUID -eq 0 ]] || { echo "请用 root 运行（sudo bash $0）"; exit 1; }
