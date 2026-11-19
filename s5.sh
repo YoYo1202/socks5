@@ -11,11 +11,11 @@
 # ============================================================
 set -euo pipefail
 
-PORT="${1:-1080}"
-U="${2:-s5user}"
+PORT=$(printf '%s' "${1:-1080}" | tr -cd '0-9'); [ -n "$PORT" ] || PORT=1080
+U=$(printf '%s' "${2:-s5user}" | tr -d '\r\n ')
+[ -n "$U" ] || U=s5user
 [[ $EUID -eq 0 ]] || { echo "请用 root 运行（sudo bash $0）"; exit 1; }
-[[ "$PORT" =~ ^[0-9]+$ ]] && (( PORT > 0 && PORT < 65536 )) || { echo "端口不合法: $PORT"; exit 1; }
-
+(( PORT > 0 && PORT < 65536 )) || { echo "端口不合法: $PORT"; exit 1; }
 W=""
 [[ "$U" == "none" ]] || W=$(head -c 16 /dev/urandom | md5sum | cut -c1-16)
 
